@@ -1,73 +1,72 @@
-# Welcome to your Lovable project
+# 🎉 Mega Giveaway – April Fool SaaS Prank Website
 
-## Project info
+A premium SaaS-style prank website built for April Fool’s Day.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This project simulates a high-converting startup giveaway landing page where users can "join" a fake Mega Giveaway. After submitting their name, they are redirected to a dashboard with a live countdown to April 1st midnight — where the site reveals:
 
-## How can I edit this code?
+> **APRIL FOOL 😄**
 
-There are several ways of editing your application.
+🌐 Live Demo  
+https://megagiveaway.lovable.app
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🚀 Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![HTML](https://img.shields.io/badge/HTML-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS](https://img.shields.io/badge/CSS-1572B6?style=for-the-badge&logo=css3&logoColor=white)
 
-**Use your preferred IDE**
+### Backend
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## ✨ Features
 
-Follow these steps:
+- Modern SaaS-style landing page
+- Name submission stored in database
+- Participant dashboard UI
+- Timezone-based countdown to April 1 (midnight)
+- Automatic prank reveal logic
+- Confetti animation on reveal
+- Fully responsive (mobile + desktop)
+- Clean gradients, glassmorphism UI, smooth micro-interactions
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🧠 How It Works
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. User enters their name on the landing page.
+2. The name is stored in the `participants` database table.
+3. User is redirected to a dashboard.
+4. Countdown runs until April 1st 12:00 AM (based on user’s local timezone).
+5. When time reaches zero, the countdown is replaced with:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+   **APRIL FOOL 😄**  
+   _There is no giveaway._
 
-**Edit a file directly in GitHub**
+The countdown logic runs on the client side and auto-detects user timezone.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 🗄 Database Schema
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**Table: `participants`**
 
-## What technologies are used for this project?
+| Field       | Type        | Description            |
+|------------|------------|------------------------|
+| id         | UUID / ID  | Primary key            |
+| name       | String     | Participant name       |
+| created_at | Timestamp  | Submission time        |
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🛠 Local Installation
 
-## How can I deploy this project?
+1️⃣ Clone the repository
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+git clone https://github.com/your-username/your-repo-name.git
