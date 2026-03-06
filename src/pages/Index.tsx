@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Gift, Zap, Trophy, Users, ChevronDown, Sparkles, Star, ArrowRight, Laptop, Smartphone, DollarSign } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LiveCounter from "@/components/LiveCounter";
@@ -40,6 +40,8 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref") || undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +57,16 @@ const Index = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("participants").insert({ name: trimmed });
+      const { data, error } = await supabase
+        .from("participants")
+        .insert({ name: trimmed, referred_by: refCode || null })
+        .select("referral_code")
+        .single();
       if (error) {
         console.error("Supabase insert error:", error);
         throw error;
       }
-      navigate(`/dashboard?name=${encodeURIComponent(trimmed)}`);
+      navigate(`/dashboard?name=${encodeURIComponent(trimmed)}&code=${data.referral_code}`);
     } catch (err) {
       console.error("Submit error:", err);
       toast.error("Something went wrong. Please try again.");
