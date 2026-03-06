@@ -3,6 +3,9 @@ import { Gift, Zap, Trophy, Users, ChevronDown, Sparkles, Star, ArrowRight, Lapt
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import LiveCounter from "@/components/LiveCounter";
+import SpotsRemaining from "@/components/SpotsRemaining";
+import FakeActivityToast from "@/components/FakeActivityToast";
 
 const prizes = [
   { icon: Laptop, label: "MacBook Pro M4", value: "$3,499" },
@@ -53,9 +56,13 @@ const Index = () => {
     setLoading(true);
     try {
       const { error } = await supabase.from("participants").insert({ name: trimmed });
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
       navigate(`/dashboard?name=${encodeURIComponent(trimmed)}`);
-    } catch {
+    } catch (err) {
+      console.error("Submit error:", err);
       toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -64,6 +71,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
+      <FakeActivityToast />
+
       {/* Nav */}
       <nav className="fixed top-0 w-full z-50 glass-card border-b border-border/50 rounded-none">
         <div className="container mx-auto flex items-center justify-between h-16 px-6">
@@ -71,9 +80,7 @@ const Index = () => {
             <Gift className="h-6 w-6 text-primary" />
             <span className="font-bold text-lg">MegaGive</span>
           </div>
-          <a href="#join" className="gradient-bg text-primary-foreground px-5 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition-opacity">
-            Join Now
-          </a>
+          <LiveCounter />
         </div>
       </nav>
 
@@ -120,7 +127,8 @@ const Index = () => {
                 )}
               </button>
             </form>
-            <p className="text-xs text-muted-foreground mt-3">Free entry • No spam • Winners announced April 1st</p>
+            <SpotsRemaining />
+            <p className="text-xs text-muted-foreground mt-2">Free entry • No spam • Winners announced April 1st</p>
           </div>
         </div>
       </section>

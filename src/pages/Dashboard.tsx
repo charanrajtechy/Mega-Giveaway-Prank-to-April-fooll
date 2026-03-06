@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Gift, Clock, Trophy, Share2, PartyPopper, CheckCircle } from "lucide-react";
+import { Gift, Clock, Trophy, Share2, PartyPopper, CheckCircle, Link2, Copy } from "lucide-react";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 
@@ -14,11 +14,10 @@ interface TimeLeft {
 const getAprilFirst = (): Date => {
   const now = new Date();
   let year = now.getFullYear();
-  const april1 = new Date(year, 3, 1, 0, 0, 0, 0); // April 1st midnight local
+  const april1 = new Date(year, 3, 1, 0, 0, 0, 0);
   if (now >= april1) {
-    // If we're past April 1st, check if same day
     const april2 = new Date(year, 3, 2, 0, 0, 0, 0);
-    if (now < april2) return april1; // Still April 1st
+    if (now < april2) return april1;
     year++;
   }
   return new Date(year, 3, 1, 0, 0, 0, 0);
@@ -41,6 +40,11 @@ const getTimeLeft = (): TimeLeft => {
   };
 };
 
+const generateReferralCode = (name: string) => {
+  const hash = name.split("").reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
+  return `MG-${Math.abs(hash).toString(36).toUpperCase().slice(0, 6)}`;
+};
+
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -48,18 +52,24 @@ const Dashboard = () => {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft());
   const [revealed, setRevealed] = useState(isAprilFool());
   const [confettiFired, setConfettiFired] = useState(false);
+  const referralCode = generateReferralCode(name);
+  const referralLink = `${window.location.origin}?ref=${referralCode}`;
 
   const fireConfetti = useCallback(() => {
     if (confettiFired) return;
     setConfettiFired(true);
-    const duration = 4000;
+    const duration = 6000;
     const end = Date.now() + duration;
     const frame = () => {
-      confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors: ["#7c3aed", "#3b82f6", "#06b6d4", "#f59e0b"] });
-      confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors: ["#7c3aed", "#3b82f6", "#06b6d4", "#f59e0b"] });
+      confetti({ particleCount: 5, angle: 60, spread: 70, origin: { x: 0 }, colors: ["#7c3aed", "#3b82f6", "#06b6d4", "#f59e0b", "#ef4444"] });
+      confetti({ particleCount: 5, angle: 120, spread: 70, origin: { x: 1 }, colors: ["#7c3aed", "#3b82f6", "#06b6d4", "#f59e0b", "#ef4444"] });
       if (Date.now() < end) requestAnimationFrame(frame);
     };
     frame();
+    // Big burst
+    setTimeout(() => {
+      confetti({ particleCount: 150, spread: 180, origin: { y: 0.6 }, colors: ["#7c3aed", "#3b82f6", "#06b6d4", "#f59e0b", "#ef4444"] });
+    }, 500);
   }, [confettiFired]);
 
   useEffect(() => {
@@ -75,35 +85,73 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (revealed) fireConfetti();
+    if (revealed) {
+      document.documentElement.classList.add("dark");
+      fireConfetti();
+    }
   }, [revealed, fireConfetti]);
 
   const handleShare = () => {
-    const url = window.location.origin;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(referralLink);
     toast.success("Link copied! Share the prank with friends 😄");
   };
 
+  const handleSharePrank = () => {
+    const url = window.location.origin;
+    navigator.clipboard.writeText(url);
+    toast.success("Prank link copied! Send it to your next victim 😈");
+  };
+
+  const handleCopyReferral = () => {
+    navigator.clipboard.writeText(referralLink);
+    toast.success("Referral link copied!");
+  };
+
+  // FULL SCREEN APRIL FOOL REVEAL
   if (revealed) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="text-center max-w-lg animate-scale-in">
-          <div className="text-8xl md:text-9xl mb-6">😄</div>
-          <h1 className="text-5xl md:text-7xl font-black gradient-text mb-6">APRIL FOOL!</h1>
-          <p className="text-xl text-muted-foreground mb-2">Hey <span className="text-foreground font-semibold">{name}</span>,</p>
-          <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-            There is no giveaway. <span className="font-semibold text-foreground">Got you!</span> 🎉
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      <div className="fixed inset-0 bg-background flex items-center justify-center p-6 z-[9999] overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] animate-float" />
+          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] animate-float" style={{ animationDelay: "2s" }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-destructive/10 rounded-full blur-[150px] animate-pulse-glow" />
+        </div>
+
+        <div className="text-center max-w-2xl relative animate-scale-in">
+          {/* Giant emoji */}
+          <div className="text-[120px] md:text-[180px] leading-none mb-4 animate-bounce">😄</div>
+
+          {/* Main text */}
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black gradient-text mb-4 tracking-tight">
+            APRIL FOOL!
+          </h1>
+
+          <div className="space-y-3 mb-10">
+            <p className="text-xl md:text-2xl text-muted-foreground">
+              Hey <span className="text-foreground font-bold">{name}</span>,
+            </p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground">
+              There is no giveaway. <span className="gradient-text">Got you!</span> 🎉
+            </p>
+            <p className="text-muted-foreground text-lg">
+              No MacBook. No iPhone. No cash. Just pure comedy. 😂
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={handleShare}
-              className="inline-flex items-center justify-center gap-2 gradient-hero-bg text-primary-foreground px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity glow-effect"
+              onClick={handleSharePrank}
+              className="inline-flex items-center justify-center gap-2 gradient-hero-bg text-primary-foreground px-8 py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity glow-effect"
             >
-              <Share2 className="h-5 w-5" /> Share This Prank
+              <Share2 className="h-5 w-5" /> You got pranked by me
             </button>
             <button
-              onClick={() => navigate("/")}
-              className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-6 py-3 rounded-xl font-bold hover:bg-secondary/80 transition-colors"
+              onClick={() => {
+                document.documentElement.classList.remove("dark");
+                navigate("/");
+              }}
+              className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-8 py-4 rounded-2xl font-bold text-lg hover:bg-secondary/80 transition-colors"
             >
               Back to Home
             </button>
@@ -189,13 +237,47 @@ const Dashboard = () => {
           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">Pending</span>
         </div>
 
-        {/* Share */}
-        <div className="text-center pt-4">
+        {/* Referral Section */}
+        <div className="glass-card-elevated p-6 md:p-8 space-y-5" style={{ animationDelay: "0.3s" }}>
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 mb-3">
+              <Link2 className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-lg">Invite Friends, Boost Your Chances</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Share your unique referral link. Each friend who joins increases your winning probability!
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm text-muted-foreground font-mono truncate border border-border">
+              {referralLink}
+            </div>
+            <button
+              onClick={handleCopyReferral}
+              className="gradient-bg text-primary-foreground px-4 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center gap-2 shrink-0"
+            >
+              <Copy className="h-4 w-4" /> Copy
+            </button>
+          </div>
+
+          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+            <div className="text-center">
+              <div className="font-bold text-foreground text-2xl">0</div>
+              <div>Friends invited</div>
+            </div>
+            <div className="w-px h-10 bg-border" />
+            <div className="text-center">
+              <div className="font-bold text-foreground text-2xl">1x</div>
+              <div>Win multiplier</div>
+            </div>
+          </div>
+
           <button
             onClick={handleShare}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="w-full gradient-hero-bg text-primary-foreground py-3 rounded-xl font-bold hover:opacity-90 transition-opacity glow-effect flex items-center justify-center gap-2"
           >
-            <Share2 className="h-4 w-4" /> Share with friends to increase your chances
+            <Share2 className="h-5 w-5" /> Share with Friends
           </button>
         </div>
       </div>
