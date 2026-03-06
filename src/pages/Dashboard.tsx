@@ -1,14 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Gift, Clock, Trophy, Share2, PartyPopper, CheckCircle, Link2, Copy } from "lucide-react";
+import { Gift, Clock, Trophy, Share2, PartyPopper, CheckCircle, Copy, Users } from "lucide-react";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TimeLeft {
   days: number;
   hours: number;
   minutes: number;
   seconds: number;
+}
+
+interface Referral {
+  name: string;
+  created_at: string;
 }
 
 const getAprilFirst = (): Date => {
@@ -40,20 +46,38 @@ const getTimeLeft = (): TimeLeft => {
   };
 };
 
-const generateReferralCode = (name: string) => {
-  const hash = name.split("").reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
-  return `MG-${Math.abs(hash).toString(36).toUpperCase().slice(0, 6)}`;
-};
-
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const name = searchParams.get("name") || "Participant";
+  const code = searchParams.get("code") || "";
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft());
   const [revealed, setRevealed] = useState(isAprilFool());
   const [confettiFired, setConfettiFired] = useState(false);
-  const referralCode = generateReferralCode(name);
-  const referralLink = `${window.location.origin}?ref=${referralCode}`;
+  const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [referralCount, setReferralCount] = useState(0);
+
+  const referralLink = `https://megagiveaway.lovable.app?ref=${code}`;
+
+  // Fetch referral data
+  useEffect(() => {
+    if (!code) return;
+    const fetchReferrals = async () => {
+      const { data, error } = await supabase
+        .from("participants")
+        .select("name, created_at")
+        .eq("referred_by", code)
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        setReferrals(data);
+        setReferralCount(data.length);
+      }
+    };
+    fetchReferrals();
+    // Poll every 15s for new referrals
+    const interval = setInterval(fetchReferrals, 15000);
+    return () => clearInterval(interval);
+  }, [code]);
 
   const fireConfetti = useCallback(() => {
     if (confettiFired) return;
@@ -66,7 +90,6 @@ const Dashboard = () => {
       if (Date.now() < end) requestAnimationFrame(frame);
     };
     frame();
-    // Big burst
     setTimeout(() => {
       confetti({ particleCount: 150, spread: 180, origin: { y: 0.6 }, colors: ["#7c3aed", "#3b82f6", "#06b6d4", "#f59e0b", "#ef4444"] });
     }, 500);
@@ -91,14 +114,8 @@ const Dashboard = () => {
     }
   }, [revealed, fireConfetti]);
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast.success("Link copied! Share the prank with friends 😄");
-  };
-
   const handleSharePrank = () => {
-    const url = window.location.origin;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(window.location.origin);
     toast.success("Prank link copied! Send it to your next victim 😈");
   };
 
@@ -107,52 +124,45 @@ const Dashboard = () => {
     toast.success("Referral link copied!");
   };
 
+  const getWinMultiplier = () => {
+    if (referralCount >= 10) return "5x";
+    if (referralCount >= 5) return "3x";
+    if (referralCount >= 2) return "2x";
+    return "1x";
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
   // FULL SCREEN APRIL FOOL REVEAL
   if (revealed) {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center p-6 z-[9999] overflow-hidden">
-        {/* Animated background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] animate-float" />
           <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] animate-float" style={{ animationDelay: "2s" }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-destructive/10 rounded-full blur-[150px] animate-pulse-glow" />
         </div>
-
         <div className="text-center max-w-2xl relative animate-scale-in">
-          {/* Giant emoji */}
           <div className="text-[120px] md:text-[180px] leading-none mb-4 animate-bounce">😄</div>
-
-          {/* Main text */}
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black gradient-text mb-4 tracking-tight">
-            APRIL FOOL!
-          </h1>
-
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black gradient-text mb-4 tracking-tight">APRIL FOOL!</h1>
           <div className="space-y-3 mb-10">
-            <p className="text-xl md:text-2xl text-muted-foreground">
-              Hey <span className="text-foreground font-bold">{name}</span>,
-            </p>
-            <p className="text-2xl md:text-3xl font-bold text-foreground">
-              There is no giveaway. <span className="gradient-text">Got you!</span> 🎉
-            </p>
-            <p className="text-muted-foreground text-lg">
-              No MacBook. No iPhone. No cash. Just pure comedy. 😂
-            </p>
+            <p className="text-xl md:text-2xl text-muted-foreground">Hey <span className="text-foreground font-bold">{name}</span>,</p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground">There is no giveaway. <span className="gradient-text">Got you!</span> 🎉</p>
+            <p className="text-muted-foreground text-lg">No MacBook. No iPhone. No cash. Just pure comedy. 😂</p>
           </div>
-
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={handleSharePrank}
-              className="inline-flex items-center justify-center gap-2 gradient-hero-bg text-primary-foreground px-8 py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity glow-effect"
-            >
+            <button onClick={handleSharePrank} className="inline-flex items-center justify-center gap-2 gradient-hero-bg text-primary-foreground px-8 py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity glow-effect">
               <Share2 className="h-5 w-5" /> You got pranked by me
             </button>
-            <button
-              onClick={() => {
-                document.documentElement.classList.remove("dark");
-                navigate("/");
-              }}
-              className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-8 py-4 rounded-2xl font-bold text-lg hover:bg-secondary/80 transition-colors"
-            >
+            <button onClick={() => { document.documentElement.classList.remove("dark"); navigate("/"); }} className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-8 py-4 rounded-2xl font-bold text-lg hover:bg-secondary/80 transition-colors">
               Back to Home
             </button>
           </div>
@@ -193,7 +203,7 @@ const Dashboard = () => {
         </div>
 
         {/* Countdown */}
-        <div className="glass-card-elevated p-8 md:p-10 text-center" style={{ animationDelay: "0.1s" }}>
+        <div className="glass-card-elevated p-8 md:p-10 text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
             <Clock className="h-5 w-5 text-primary" />
             <h2 className="font-bold text-lg">Winner Announcement In</h2>
@@ -217,16 +227,13 @@ const Dashboard = () => {
               <span>{Math.round(progress)}%</span>
             </div>
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-              <div
-                className="h-full gradient-hero-bg rounded-full transition-all duration-1000"
-                style={{ width: `${progress}%` }}
-              />
+              <div className="h-full gradient-hero-bg rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
             </div>
           </div>
         </div>
 
         {/* Status */}
-        <div className="glass-card-elevated p-6 flex items-center gap-4" style={{ animationDelay: "0.2s" }}>
+        <div className="glass-card-elevated p-6 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center shrink-0">
             <Trophy className="h-6 w-6 text-primary-foreground" />
           </div>
@@ -238,48 +245,72 @@ const Dashboard = () => {
         </div>
 
         {/* Referral Section */}
-        <div className="glass-card-elevated p-6 md:p-8 space-y-5" style={{ animationDelay: "0.3s" }}>
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 mb-3">
-              <Link2 className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-lg">Invite Friends, Boost Your Chances</h3>
+        {code && (
+          <div className="glass-card-elevated p-6 md:p-8 space-y-5">
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 mb-3">
+                <Share2 className="h-5 w-5 text-primary" />
+                <h3 className="font-bold text-lg">Invite Friends, Boost Your Chances</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Share your unique referral link. Each friend who joins increases your winning probability!
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Share your unique referral link. Each friend who joins increases your winning probability!
-            </p>
-          </div>
 
-          <div className="flex gap-2">
-            <div className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm text-muted-foreground font-mono truncate border border-border">
-              {referralLink}
+            <div className="flex gap-2">
+              <div className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm text-muted-foreground font-mono truncate border border-border">
+                {referralLink}
+              </div>
+              <button
+                onClick={handleCopyReferral}
+                className="gradient-bg text-primary-foreground px-4 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center gap-2 shrink-0"
+              >
+                <Copy className="h-4 w-4" /> Copy
+              </button>
             </div>
+
+            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+              <div className="text-center">
+                <div className="font-bold text-foreground text-2xl tabular-nums">{referralCount}</div>
+                <div>Friends joined</div>
+              </div>
+              <div className="w-px h-10 bg-border" />
+              <div className="text-center">
+                <div className="font-bold text-foreground text-2xl">{getWinMultiplier()}</div>
+                <div>Win multiplier</div>
+              </div>
+            </div>
+
+            {/* Referral list */}
+            {referrals.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Your Referrals
+                </h4>
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {referrals.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between bg-secondary/50 rounded-xl px-4 py-3 border border-border/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-xs font-bold text-primary-foreground">
+                          {r.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-sm">{r.name}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{timeAgo(r.created_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleCopyReferral}
-              className="gradient-bg text-primary-foreground px-4 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center gap-2 shrink-0"
+              className="w-full gradient-hero-bg text-primary-foreground py-3 rounded-xl font-bold hover:opacity-90 transition-opacity glow-effect flex items-center justify-center gap-2"
             >
-              <Copy className="h-4 w-4" /> Copy
+              <Share2 className="h-5 w-5" /> Share with Friends
             </button>
           </div>
-
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <div className="text-center">
-              <div className="font-bold text-foreground text-2xl">0</div>
-              <div>Friends invited</div>
-            </div>
-            <div className="w-px h-10 bg-border" />
-            <div className="text-center">
-              <div className="font-bold text-foreground text-2xl">1x</div>
-              <div>Win multiplier</div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleShare}
-            className="w-full gradient-hero-bg text-primary-foreground py-3 rounded-xl font-bold hover:opacity-90 transition-opacity glow-effect flex items-center justify-center gap-2"
-          >
-            <Share2 className="h-5 w-5" /> Share with Friends
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
