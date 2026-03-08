@@ -57,6 +57,18 @@ const Index = () => {
 
     setLoading(true);
     try {
+      // Check if name already exists
+      const { data: existing } = await supabase
+        .from("participants")
+        .select("referral_code")
+        .eq("name", trimmed)
+        .maybeSingle();
+
+      if (existing) {
+        navigate(`/dashboard?name=${encodeURIComponent(trimmed)}&code=${existing.referral_code}`);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("participants")
         .insert({ name: trimmed, referred_by: refCode || null })
