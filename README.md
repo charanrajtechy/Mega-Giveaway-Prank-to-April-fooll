@@ -6,9 +6,6 @@ This project simulates a high-converting startup giveaway landing page where use
 
 > **APRIL FOOL 😄**
 
-🌐 Live Demo  
-https://megagiveaway.lovable.app
-
 ---
 
 ## 🚀 Tech Stack
